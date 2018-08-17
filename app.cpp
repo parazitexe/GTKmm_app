@@ -10,8 +10,8 @@
 #include <gst/rtsp/gstrtspurl.h>
 #include <gst/rtsp/gstrtspconnection.h>
 
-#include <gst/rtsp/gstrtspmessage.h>
-
+#include <thread>
+#include "AppServer.cpp"
 
 
 
@@ -32,11 +32,25 @@ class App : public Gtk::Application
 {
 protected:
 
-	App(){
-		printf("Constructor \n");
+	App() {
+		printf("App Constructor \n");
+		
+		app_timeout = 2;
+		path =  "rtsp://admin:admin1@192.168.100.222:554/cam/realmonitor?channel=1&subtype=1";
+		
+		//create instanse of slass AppServer and put it to pointer named app_server
+		//app_server = new AppServer(	app_timeout, path);
+		
+		//run server to connect to RTSP and stream to localhost in new thread 
+		//app_server_thread = new std::thread( [this] { app_server->run_server(); } );
+		
 	};
 	~App(){
-		printf("Destructor \n");
+		//run app_server Destructor
+		//app_server_thread->join();
+		//app_server->~AppServer();
+		
+		printf("App Destructor \n");
 	};
 
 
@@ -48,17 +62,18 @@ protected:
 		Gtk::Application::on_startup();
 		
 		//create builder and show main ui window that goes from glade
-		builder = Gtk::Builder::create_from_file("window.glade");
+		//builder = Gtk::Builder::create_from_file("window.glade");
 		create_and_show_window();
 	};
 	void on_activate() override{
-		app_timeout = 2;
-		path =  "";
-		get_controls();
-		get_video_window();
-		connect_to_rtsp_and_init_pipeline();
-		play();
-		g_timeout_add_seconds (app_timeout, (GSourceFunc)check_status, this);
+		//init native "on_activate" function
+		Gtk::Application::on_activate();
+		
+		//get_controls();
+		//get_video_window();
+		//connect_to_rtsp_and_init_pipeline();
+		//play();
+		//g_timeout_add_seconds (app_timeout, (GSourceFunc)check_local_status, this);
 	};
 
 private:
@@ -106,6 +121,11 @@ private:
 	gint app_timeout;
 	char *path;
 	
+	
+	AppServer *app_server;
+	std::thread* app_server_thread;
+	
+	
 public:
 
 	//function for create instanse of App manually from outside
@@ -138,7 +158,8 @@ private:
 	void connect_to_rtsp_and_init_pipeline(){
 		g_message ("connect_to_rtsp_and_init_pipeline \t RUN");
 				
-		pipelines.pipeline_1 = gst_parse_launch ("rtspsrc protocols=tcp max-rtcp-rtp-time-diff=-1 retry=0 timeout=0 tcp-timeout=0 location=rtsp://admin:admin1@192.168.100.222:554/cam/realmonitor?channel=1&subtype=1 ! rtph264depay ! avdec_h264 ! glimagesink sync=false", NULL);
+		//pipelines.pipeline_1 = gst_parse_launch ("rtspsrc protocols=tcp location=rtsp://admin:admin1@192.168.100.222:554/cam/realmonitor?channel=1&subtype=1 ! rtph264depay ! avdec_h264 ! glimagesink sync=false", NULL);
+		pipelines.pipeline_1 = gst_parse_launch ("rtspsrc location=rtsp://127.0.0.1:8554/local_rtsp_server ! rtph264depay ! avdec_h264 ! glimagesink sync=false", NULL);
 		
 		Glib::RefPtr<Gdk::Window> window = layouts.video_window->get_window();
 		
@@ -148,15 +169,13 @@ private:
 		GstElement *sink = gst_bin_get_by_name (GST_BIN (pipelines.pipeline_1), "sink");
 		gst_video_overlay_set_window_handle (GST_VIDEO_OVERLAY (sink), window_handle);
 		
-		//pipelines.pipeline_1 = gst_element_factory_make ("playbin", "playbin");
-		//g_object_set (pipelines.pipeline_1, "uri", "rtsp://admin:admin1@192.168.100.222:554/cam/realmonitor?channel=1&subtype=1", NULL);
-		//gst_video_overlay_set_window_handle (GST_VIDEO_OVERLAY (pipelines.pipeline_1), window_handle);
-		
-		
-		
 		//add buss for handle message
 		pipelines.bus_1 = gst_pipeline_get_bus (GST_PIPELINE (pipelines.pipeline_1));
-		gst_bus_add_watch (pipelines.bus_1, my_bus_callback, NULL);	
+		gst_bus_add_watch (pipelines.bus_1, my_bus_callback, NULL);
+		
+		
+		//init status of pipeline_1
+		pipelines.status_pipeline_1 = STOPED;
 		
 
 	}
@@ -186,15 +205,16 @@ private:
 		gst_element_post_message (pipelines.pipeline_1, gst_message_new_application (GST_OBJECT (pipelines.pipeline_1),  gst_structure_new_empty ("message-test")));
 	}
 	
-	//function for check conection status, stop and resume pipeline
-	static gboolean check_status ( gpointer data ) {
-		printf("check_status \n");
+	//function for check conection to local server status, stop and resume pipeline
+	static gboolean check_local_status ( gpointer data ) {
+		printf(" \n--- client message ---  \n");
+		printf("check_connection to local RTSP server \n");
 		App* instance = (App*)data;
 		
 		
 		//add connection handling strongly need at refactoring move to method
 								 
-		const gchar 		*urlstr = "rtsp://admin:admin1@192.168.100.222:554/cam/realmonitor?channel=1&subtype=1";
+		const gchar 		*urlstr = "rtsp://127.0.0.1:8554/local_rtsp_server";
 		
 		GstRTSPUrl 			*url;
 		GstRTSPConnection 	*conn;
@@ -222,9 +242,9 @@ private:
 			instance->stop();
 		}
 		
-		g_message ("conection_status - %s,",	(instance->pipelines.connection == ONLINE) ? "ONLINE" : "OFFLINE" );
+		printf ("client conection_status - \t %s \n",	(instance->pipelines.connection == ONLINE) ? "ONLINE" : "OFFLINE" );
 		
-		g_message ("pipeline_status -  \t %s", 	(instance->pipelines.status_pipeline_1 == STOPED) ? "STOPED" : ((instance->pipelines.status_pipeline_1 == PAUSED) ? "PAUSED" : "PLAYING_ONLINE") );
+		printf ("client pipeline_status -  \t %s \n", 	(instance->pipelines.status_pipeline_1 == STOPED) ? "STOPED" : ((instance->pipelines.status_pipeline_1 == PAUSED) ? "PAUSED" : "PLAYING_ONLINE") );
 		
 		if(instance->pipelines.connection == ONLINE && instance->pipelines.status_pipeline_1 == STOPED){
 			instance->connect_to_rtsp_and_init_pipeline();
@@ -253,8 +273,8 @@ private:
 	switch (GST_MESSAGE_TYPE (message)) {
 		case GST_MESSAGE_STREAM_STATUS:{
 			const GValue *status_val =  gst_message_get_stream_status_object (message);
-			printf("gst_message_type_get_name %s %s \n", gst_message_type_get_name(message->type), date_out);
-			g_message ("object: type %s, value %p %s", G_VALUE_TYPE_NAME (status_val), g_value_get_object (status_val), date_out);
+			printf ("gst_message_type_get_name %s %s \n", gst_message_type_get_name(message->type), date_out);
+			printf ("object: type %s, value %p %s \n", G_VALUE_TYPE_NAME (status_val), g_value_get_object (status_val), date_out);
 			break;
 		}
 		case GST_MESSAGE_EOS:{

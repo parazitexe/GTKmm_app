@@ -7,7 +7,4 @@ int main(int argc, char* argv[])
 	const int status = app->run(argc, argv);
 	
 	return status;
-	
-	
-	
 }
