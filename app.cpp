@@ -159,7 +159,7 @@ private:
 		g_message ("connect_to_rtsp_and_init_pipeline \t RUN");
 				
 		//pipelines.pipeline_1 = gst_parse_launch ("rtspsrc protocols=tcp location=rtsp://admin:admin1@192.168.100.222:554/cam/realmonitor?channel=1&subtype=1 ! rtph264depay ! avdec_h264 ! glimagesink sync=false", NULL);
-		pipelines.pipeline_1 = gst_parse_launch ("rtspsrc location=rtsp://127.0.0.1:8554/local_rtsp_server ! rtph264depay ! avdec_h264 ! glimagesink sync=false", NULL);
+		pipelines.pipeline_1 = gst_parse_launch ("rtspsrc latency=0 max-ts-offset=0 location=rtsp://127.0.0.1:8554/local_rtsp_server ! rtph264depay ! avdec_h264 ! glimagesink sync=false", NULL);
 		
 		Glib::RefPtr<Gdk::Window> window = layouts.video_window->get_window();
 		

@@ -8,7 +8,7 @@ public:
 		
 		app_server_timeout = timeout;
 		path = my_path;
-		sprintf(factory_launch_string, "( rtspsrc protocols=tcp location=%s%s", path, " ! rtph264depay  ! rtph264pay pt=96 name=pay0 )");
+		sprintf(factory_launch_string, "( rtspsrc protocols=tcp latency=0 max-ts-offset=0 location=%s%s", path, " ! rtph264depay  ! rtph264pay pt=96 name=pay0 )");
 		
 	}
 	~AppServer(){
