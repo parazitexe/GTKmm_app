@@ -1,0 +1,62 @@
+__________________________________<span id="timer"></span>
+<br>
+__________________________________<button id="reset">reset</button>
+<br>
+<canvas id="canvas" style="height: 400px; width: 400px">
+    not work
+</canvas>
+<br>
+online ( will show network status )
+<br>
+<button class="restart" id="player_restart">restart palyer</button>
+<br>
+<button class="restart" id="server_restart">restart server</button>
+<br>
+{{title}} <br>
+-------------<br>
+{{data}}<br>
+
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsmpeg/0.2/jsmpg.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.3.1.min.js"
+        integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
+        crossorigin="anonymous"></script>
+<!--<script src="http://localhost:3000/jsmpg.js"></script>
+<script src="http://localhost:3000/jquery.js"></script>-->
+<script>
+    $( document ).ready(function() {
+
+        var client = new WebSocket('ws://localhost:9999');
+        var player = new jsmpeg(client, {
+            canvas: canvas
+        });
+        var serverbtn = document.getElementById("server_restart");
+        var ui_manual = new WebSocket('ws://localhost:9998');
+        serverbtn.addEventListener("click", function () {
+            console.log("sent restart to server");
+            ui_manual.send("restart");
+        });
+        var playerbtn = document.getElementById("player_restart");
+        playerbtn.addEventListener("click", function () {
+            console.log("sent restart to player");
+
+        });
+
+        //timer
+        var timer = document.getElementById("timer");
+        let i = 0;
+        setInterval( _=> {
+            timer.innerHTML = i++;
+            console.log(i);
+        }, 1000)
+        var timerreset = document.getElementById("reset");
+        timerreset.addEventListener("click",  _=> {
+            console.log(i);
+            i = 0;
+        });
+
+
+
+    });
+</script>

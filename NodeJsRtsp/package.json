@@ -1,0 +1,25 @@
+{
+  "name": "nodejs",
+  "version": "0.0.0",
+  "scripts": {
+    "start": "node ./app"
+  },
+  "devDependencies": {
+    "express": "~4.15.4",
+    "consolidate": "~0.14.5",
+    "mongodb": "~2.2.31",
+    "nunjucks": "~3.0.1",
+    "swig": "~1.4.2",
+    "body-parser": "~1.17.2"
+  },
+  "author": "Asy_shymchenko",
+  "license": "ISC",
+  "dependencies": {
+    "ffmpeg": "0.0.4",
+    "fluent-ffmpeg": "^2.1.2",
+    "fluent-ffmpeg-extended": "^1.5.2",
+    "fs": "0.0.1-security",
+    "node-rtsp-stream": "0.0.3",
+    "ws": "^5.2.1"
+  }
+}
